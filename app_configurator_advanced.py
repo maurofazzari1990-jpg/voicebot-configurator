@@ -211,4 +211,4 @@ with cols_channel[2]:
 
 with cols_channel[3]:
     # 7. CHANNEL (Phone Outbound) (Dropdown)
-    st.selectbox("
+st.markdown("---")
