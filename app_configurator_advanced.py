@@ -13,20 +13,19 @@ CONFIG_FILE = "voicebot_config.json"
 DEFAULT_CONFIG = {
     "bot_name": "Nuovo Voicebot",
     "general_params": {
-        "1_ID": "1",
-        "2_NAME": "ROBBY",
-        "3_GENDER": "MALE",
-        "4_CHANNEL_WHATSAPP": "OK",
-        "5_CHANNEL_CLICK2CALL": "OK",
-        "6_CHANNEL_PHONE_INBOUND": "OK",
-        "7_CHANNEL_PHONE_OUTBOUND": "KO",
-        "8_PERSONALITA": "EMPATHETIC",
+        "2_NAME": "",
+        "3_GENDER": "",
+        "4_CHANNEL_WHATSAPP": "",
+        "5_CHANNEL_CLICK2CALL": "",
+        "6_CHANNEL_PHONE_INBOUND": "",
+        "7_CHANNEL_PHONE_OUTBOUND": "",
+        "8_PERSONALITA": "",
         "9_DISCUSSION_MGM": "",
-        "10_VOICE": "XXXX",
-        "11_ETA_VOCALE_DEL_BOT": "Adult",
-        "12_LINGUE": "IT",
-        "13_VELOCITA_DEL_PARLATO": "Media",
-        "14_MEMORIA_SESSIONE": "numero di cellulare",
+        "10_VOICE": "",
+        "11_ETA_VOCALE_DEL_BOT": "",
+        "12_LINGUE": "",
+        "13_VELOCITA_DEL_PARLATO": "",
+        "14_MEMORIA_SESSIONE": "",
     },
     "enabled_features": {}
 }
@@ -68,7 +67,7 @@ AVAILABLE_FEATURES = OrderedDict([
     ("Reindirizzamento Operatore", {
         "description": "Trasferisce la conversazione ad un agente umano.",
         "params": {
-            "target_number": {"label": "Numero di Telefono Agente", "type": "text", "default": "+3906123456"},
+            "target_number": {"label": "Numero di Telefono Agente", "type": "text", "default": ""},
             "queue_priority": {"label": "Priorità in Coda (1=Alta)", "type": "number", "default": 5}
         }
     }),
@@ -100,14 +99,14 @@ try:
 except:
     pass 
 
-st.markdown("## 🤖 Configuratore Voicebot Avanzato")
+st.markdown("## ROAR Configurator Voicebot")
 st.markdown("---")
 
 # --- 1. IMPOSTAZIONI GENERALI (I 13 PARAMETRI SPECIFICI) ---
 st.header("1. Parametri di Base del Voicebot")
 
 # Definizione delle opzioni per le dropdown list
-OPTIONS_GENDER = ["MALE", "FEMALE", "NEUTRAL", "CUSTOM"]
+OPTIONS_GENDER = ["MALE", "FEMALE", "NEUTRAL"]
 OPTIONS_STATUS = ["OK", "KO"]
 OPTIONS_PERSONALITA = ["Friendly", "Professional", "Empathetic", "Playful", "Formal"]
 OPTIONS_ETA = ["Young", "Adult", "Senior"]
