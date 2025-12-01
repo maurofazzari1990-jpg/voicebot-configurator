@@ -9,11 +9,47 @@ from collections import OrderedDict
 st.set_page_config(layout="wide", page_title="Voicebot Configurator Avanzato")
 
 CONFIG_FILE = "voicebot_config.json"
-# Struttura dei 13 parametri generali con i valori di DEFAULT corretti (CRUCIALE)
+
+# --- DEFINIZIONE VARIABILI E OPZIONI PER IL FRONTEND ---
+
+# Definizione delle opzioni per le dropdown list
+OPTIONS_GENDER = ["MALE", "FEMALE", "NEUTRAL", "CUSTOM"]
+OPTIONS_STATUS = ["OK", "KO"]
+OPTIONS_PERSONALITA = ["Friendly", "Professional", "EMPATHETIC", "Playful", "Formal"] 
+OPTIONS_ETA = ["Young", "Adult", "Senior"]
+OPTIONS_VELOCITA = ["Lenta", "Media", "Veloce"]
+OPTIONS_MEMORIA = ["numero di cellulare", "id specifico", "nome", "altra chiave identificativa"]
+
+# LISTA COMPLETA DELLE LINGUE (per la Multi-Select)
+OPTIONS_LINGUE = [
+    "Italiano", "Inglese (US)", "Inglese (UK)", "Spagnolo", "Francese", "Tedesco", 
+    "Portoghese", "Russo", "Cinese (Mandarino)", "Giapponese", "Arabo", "Hindi", 
+    "Coreano", "Turco", "Olandese", "Svedese", "Polacco", "Greco", "Ebraico", 
+    "Danese", "Finlandese", "Norvegese", "Thai", "Vietnamita", "Indonesiano",
+]
+
+# LISTA ESTESA DELLE VOCI GOOGLE CLOUD (per la Selectbox)
+OPTIONS_VOICE = [
+    # Italian
+    "it-IT-Wavenet-B (Italiano, Uomo, HQ)", "it-IT-Wavenet-A (Italiano, Donna, HQ)",
+    # English (US)
+    "en-US-Wavenet-D (Inglese US, Uomo, HQ)", "en-US-Wavenet-F (Inglese US, Donna, HQ)",
+    # Spanish (Spain)
+    "es-ES-Wavenet-B (Spagnolo ES, Uomo, HQ)", "es-ES-Wavenet-C (Spagnolo ES, Donna, HQ)",
+    # French (France)
+    "fr-FR-Wavenet-C (Francese FR, Uomo, HQ)", "fr-FR-Wavenet-B (Francese FR, Donna, HQ)",
+    # German (Germany)
+    "de-DE-Wavenet-E (Tedesco DE, Uomo, HQ)", "de-DE-Wavenet-F (Tedesco DE, Donna, HQ)",
+    # Other
+    "ja-JP-Wavenet-B (Giapponese, Donna, HQ)", "cmn-CN-Wavenet-A (Cinese, Donna, HQ)",
+    "ko-KR-Wavenet-B (Coreano, Uomo, HQ)", "pt-PT-Wavenet-C (Portoghese, Donna, HQ)",
+]
+
+# Struttura dei 14 parametri generali (NOME SOCIETA e EMAIL inclusi)
 DEFAULT_CONFIG = {
     "bot_name": "Nuovo Voicebot",
     "general_params": {
-        "1_ID": "1",
+        "1_NOME_SOCIETA": "ROAR", # CAMPO AGGIORNATO
         "2_NAME": "ROBBY",
         "3_GENDER": "MALE",
         "4_CHANNEL_WHATSAPP": "OK",
@@ -22,14 +58,16 @@ DEFAULT_CONFIG = {
         "7_CHANNEL_PHONE_OUTBOUND": "KO",
         "8_PERSONALITA": "EMPATHETIC",
         "9_DISCUSSION_MGM": "",
-        "10_VOICE": "it-IT-Wavenet-B", # Default impostato su una voce Google
+        "10_VOICE": "it-IT-Wavenet-B", # Default impostato su una voce Google IT
         "11_ETA_VOCALE_DEL_BOT": "Adult",
-        "12_LINGUE": "IT",
+        "12_LINGUE": ["Italiano"], # CAMPO AGGIORNATO (lista)
         "13_VELOCITA_DEL_PARLATO": "Media",
         "14_MEMORIA_SESSIONE": "numero di cellulare",
+        "15_EMAIL": "nome.utente@example.com", # NUOVO CAMPO
     },
     "enabled_features": {}
 }
+
 
 # Funzioni di caricamento/salvataggio
 def load_config():
@@ -55,6 +93,24 @@ def save_config(config_data):
         st.success(f"✅ Configurazione salvata con successo in '{CONFIG_FILE}'")
     except Exception as e:
         st.error(f"❌ Errore durante il salvataggio: {e}")
+
+# Funzione per ottenere il valore corrente (Versione più robusta)
+def get_current_value(key):
+    try:
+        value = st.session_state.config["general_params"].get(key)
+        if value is None:
+            return DEFAULT_CONFIG["general_params"].get(key, "")
+        # Gestione speciale per la lingua che ora è una lista
+        if key == "12_LINGUE" and not value:
+            return DEFAULT_CONFIG["general_params"].get(key, ["Italiano"])
+        return value
+    except:
+        return DEFAULT_CONFIG["general_params"].get(key, "")
+
+# Funzione per estrarre il codice voce dal nome completo (es. da "it-IT-Wavenet-B (Uomo, HQ)" a "it-IT-Wavenet-B")
+def extract_voice_code(full_name):
+    return full_name.split(' ')[0]
+
 
 # Definizione avanzata delle funzionalità disponibili (Sezione 2 e 3)
 AVAILABLE_FEATURES = OrderedDict([
@@ -87,6 +143,7 @@ AVAILABLE_FEATURES = OrderedDict([
     })
 ])
 
+
 # --- INTERFACCIA STREAMLIT ---
 
 # Inizializza o carica lo stato di sessione
@@ -101,46 +158,8 @@ if 'enabled_features' not in st.session_state.config:
     st.session_state.config['enabled_features'] = DEFAULT_CONFIG['enabled_features']
 
 
-# --- DEFINIZIONE VARIABILI E OPZIONI PER IL FRONTEND ---
-
-# Definizione delle opzioni per le dropdown list
-OPTIONS_GENDER = ["MALE", "FEMALE", "NEUTRAL", "CUSTOM"]
-OPTIONS_STATUS = ["OK", "KO"]
-OPTIONS_PERSONALITA = ["Friendly", "Professional", "EMPATHETIC", "Playful", "Formal"] 
-OPTIONS_ETA = ["Young", "Adult", "Senior"]
-OPTIONS_VELOCITA = ["Lenta", "Media", "Veloce"]
-OPTIONS_MEMORIA = ["numero di cellulare", "id specifico", "nome", "altra chiave identificativa"]
-
-# NUOVA LISTA DELLE VOCI GOOGLE CLOUD (solo voci IT WaveNet e Neural più comuni)
-OPTIONS_VOICE = [
-    "it-IT-Wavenet-A (Donna, HQ)",
-    "it-IT-Wavenet-B (Uomo, HQ)",
-    "it-IT-Wavenet-C (Donna, HQ)",
-    "it-IT-Wavenet-D (Uomo, HQ)",
-    "it-IT-Standard-A (Donna, Standard)",
-    "it-IT-Standard-B (Uomo, Standard)",
-    "it-IT-Standard-C (Donna, Standard)",
-    "it-IT-Standard-D (Uomo, Standard)",
-]
-
-# Funzione per ottenere il valore corrente (Versione più robusta)
-def get_current_value(key):
-    try:
-        value = st.session_state.config["general_params"].get(key)
-        if value is None:
-            return DEFAULT_CONFIG["general_params"].get(key, "")
-        return value
-    except:
-        return DEFAULT_CONFIG["general_params"].get(key, "")
-
-# Funzione per estrarre il codice voce dal nome completo (es. da "it-IT-Wavenet-B (Uomo, HQ)" a "it-IT-Wavenet-B")
-def extract_voice_code(full_name):
-    return full_name.split(' ')[0]
-
-
 # --- HEADER (LOGHI E TITOLI) ---
 try:
-    # Mostra il logo se è stato caricato su GitHub
     st.image("logo_roar.png", width=200) 
 except:
     pass 
@@ -149,7 +168,7 @@ st.markdown("## 🤖 Configuratore Voicebot Avanzato")
 st.markdown("---")
 
 
-# --- 1. PARAMETRI DI BASE DEL VOICEBOT (I 13 PARAMETRI SPECIFICI) ---
+# --- 1. PARAMETRI DI BASE DEL VOICEBOT (I 14 PARAMETRI SPECIFICI) ---
 st.header("1. Parametri di Base del Voicebot")
 
 # --- Configurazione Vocale e Identità ---
@@ -158,8 +177,8 @@ cols1 = st.columns(3)
 
 # GESTIONE DEI CAMPI D'INPUT E SELECTBOX
 with cols1[0]:
-    # 1. ID
-    st.text_input("ID (1)", value=get_current_value("1_ID"), key="ID")
+    # 1. NOME SOCIETA (Nuovo campo)
+    st.text_input("NOME SOCIETA (1)", value=get_current_value("1_NOME_SOCIETA"), key="NOME_SOCIETA")
 
 with cols1[1]:
     # 2. NAME
@@ -177,16 +196,14 @@ with cols_voce[0]:
     st.selectbox("PERSONALITA (8)", options=OPTIONS_PERSONALITA, index=OPTIONS_PERSONALITA.index(get_current_value("8_PERSONALITA")), key="PERSONALITA")
 
 with cols_voce[1]:
-    # 9. VOICE (Dropdown con voci Google)
-    # Cerchiamo il nome completo della voce (es. "it-IT-Wavenet-B (Uomo, HQ)")
-    # Se non lo trova, usa il nome del codice (es. "it-IT-Wavenet-B") per cercare l'indice.
+    # 9. VOICE (Dropdown con voci Google estese)
     current_voice_code = get_current_value("10_VOICE")
     
-    # Cerchiamo l'indice corretto basato sul codice
     try:
+        # Tenta di trovare l'indice esatto della voce salvata (es. "it-IT-Wavenet-B")
         index = next(i for i, name in enumerate(OPTIONS_VOICE) if extract_voice_code(name) == current_voice_code)
     except StopIteration:
-        index = 0  # Se non trova la voce salvata, usa la prima della lista
+        index = 0  # Se non trova la voce salvata, usa la prima della lista (default)
         
     st.selectbox("VOICE (9)", options=OPTIONS_VOICE, index=index, key="VOICE")
     
@@ -198,8 +215,8 @@ with cols_voce[2]:
 cols_lingua = st.columns(3)
 
 with cols_lingua[0]:
-    # 11. LINGUE
-    st.text_input("LINGUE (11)", value=get_current_value("12_LINGUE"), key="LINGUE")
+    # 11. LINGUE (Multi-select)
+    st.multiselect("LINGUE (11)", options=OPTIONS_LINGUE, default=get_current_value("12_LINGUE"), key="LINGUE")
 
 with cols_lingua[1]:
     # 12. VELOCITA DEL PARLATO (Dropdown)
@@ -208,6 +225,9 @@ with cols_lingua[1]:
 with cols_lingua[2]:
     # 13. MEMORIA SESSIONE (Dropdown)
     st.selectbox("MEMORIA SESSIONE (13)", options=OPTIONS_MEMORIA, index=OPTIONS_MEMORIA.index(get_current_value("14_MEMORIA_SESSIONE")), key="MEMORIA")
+
+# 14. EMAIL (Nuovo campo per l'utente)
+st.text_input("EMAIL (14) - Per ricevere la configurazione", value=get_current_value("15_EMAIL"), key="EMAIL_ADDRESS")
 
 # 8. DISCUSSION MGM (Campo singolo che prende l'intera larghezza)
 st.text_input("DISCUSSION MGM (9)", value=get_current_value("9_DISCUSSION_MGM"), key="DISCUSSION")
@@ -237,17 +257,17 @@ st.markdown("---")
 
 
 # --- Aggiorna i valori di sessione (Necessario per salvare i dati) ---
-st.session_state.config["general_params"]["1_ID"] = st.session_state["ID"]
+st.session_state.config["general_params"]["1_NOME_SOCIETA"] = st.session_state["NOME_SOCIETA"] # AGGIORNATO
 st.session_state.config["general_params"]["2_NAME"] = st.session_state["NAME"]
 st.session_state.config["general_params"]["3_GENDER"] = st.session_state["GENDER"]
 st.session_state.config["general_params"]["8_PERSONALITA"] = st.session_state["PERSONALITA"]
-# SALVA IL CODICE VOCE ESTRATTO (NON IL NOME COMPLETO)
+# SALVA IL CODICE VOCE ESTRATTO
 st.session_state.config["general_params"]["10_VOICE"] = extract_voice_code(st.session_state["VOICE"]) 
-
 st.session_state.config["general_params"]["11_ETA_VOCALE_DEL_BOT"] = st.session_state["ETA"]
-st.session_state.config["general_params"]["12_LINGUE"] = st.session_state["LINGUE"]
+st.session_state.config["general_params"]["12_LINGUE"] = st.session_state["LINGUE"] # AGGIORNATO (LISTA)
 st.session_state.config["general_params"]["13_VELOCITA_DEL_PARLATO"] = st.session_state["VELOCITA"]
 st.session_state.config["general_params"]["14_MEMORIA_SESSIONE"] = st.session_state["MEMORIA"]
+st.session_state.config["general_params"]["15_EMAIL"] = st.session_state["EMAIL_ADDRESS"] # NUOVO CAMPO
 st.session_state.config["general_params"]["9_DISCUSSION_MGM"] = st.session_state["DISCUSSION"]
 st.session_state.config["general_params"]["4_CHANNEL_WHATSAPP"] = st.session_state["WHATSAPP"]
 st.session_state.config["general_params"]["5_CHANNEL_CLICK2CALL"] = st.session_state["CLICK2CALL"]
@@ -350,7 +370,7 @@ if col_save.button("💾 SALVA CONFIGURAZIONE SU SERVER", type="primary"):
 col_download.download_button(
     label="⬇️ SCARICA FILE CONFIGURAZIONE (.json)",
     data=json_data,
-    file_name=CONFIG_FILE,
+    file_name=f"{st.session_state.config['general_params']['1_NOME_SOCIETA']}_config.json",
     mime="application/json"
 )
 
