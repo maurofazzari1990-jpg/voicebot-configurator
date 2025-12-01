@@ -15,18 +15,18 @@ DEFAULT_CONFIG = {
     "general_params": {
         "1_ID": "1",
         "2_NAME": "ROBBY",
-        "3_GENDER": "MALE", # Valore corretto per la dropdown
-        "4_CHANNEL_WHATSAPP": "OK", # Valore corretto per la dropdown
+        "3_GENDER": "MALE",
+        "4_CHANNEL_WHATSAPP": "OK",
         "5_CHANNEL_CLICK2CALL": "OK",
         "6_CHANNEL_PHONE_INBOUND": "OK",
         "7_CHANNEL_PHONE_OUTBOUND": "KO",
-        "8_PERSONALITA": "EMPATHETIC", # Valore corretto per la dropdown
+        "8_PERSONALITA": "EMPATHETIC",
         "9_DISCUSSION_MGM": "",
-        "10_VOICE": "XXXX",
-        "11_ETA_VOCALE_DEL_BOT": "Adult", # Valore corretto per la dropdown
+        "10_VOICE": "it-IT-Wavenet-B", # Default impostato su una voce Google
+        "11_ETA_VOCALE_DEL_BOT": "Adult",
         "12_LINGUE": "IT",
-        "13_VELOCITA_DEL_PARLATO": "Media", # Valore corretto per la dropdown
-        "14_MEMORIA_SESSIONE": "numero di cellulare", # Valore corretto per la dropdown
+        "13_VELOCITA_DEL_PARLATO": "Media",
+        "14_MEMORIA_SESSIONE": "numero di cellulare",
     },
     "enabled_features": {}
 }
@@ -111,18 +111,31 @@ OPTIONS_ETA = ["Young", "Adult", "Senior"]
 OPTIONS_VELOCITA = ["Lenta", "Media", "Veloce"]
 OPTIONS_MEMORIA = ["numero di cellulare", "id specifico", "nome", "altra chiave identificativa"]
 
+# NUOVA LISTA DELLE VOCI GOOGLE CLOUD (solo voci IT WaveNet e Neural più comuni)
+OPTIONS_VOICE = [
+    "it-IT-Wavenet-A (Donna, HQ)",
+    "it-IT-Wavenet-B (Uomo, HQ)",
+    "it-IT-Wavenet-C (Donna, HQ)",
+    "it-IT-Wavenet-D (Uomo, HQ)",
+    "it-IT-Standard-A (Donna, Standard)",
+    "it-IT-Standard-B (Uomo, Standard)",
+    "it-IT-Standard-C (Donna, Standard)",
+    "it-IT-Standard-D (Uomo, Standard)",
+]
+
 # Funzione per ottenere il valore corrente (Versione più robusta)
 def get_current_value(key):
     try:
-        # Tenta di prendere il valore dalla sessione
         value = st.session_state.config["general_params"].get(key)
         if value is None:
-            # Se non è in sessione, usa il valore di default
             return DEFAULT_CONFIG["general_params"].get(key, "")
         return value
     except:
-        # In caso di qualsiasi altro errore, usa il valore di default
         return DEFAULT_CONFIG["general_params"].get(key, "")
+
+# Funzione per estrarre il codice voce dal nome completo (es. da "it-IT-Wavenet-B (Uomo, HQ)" a "it-IT-Wavenet-B")
+def extract_voice_code(full_name):
+    return full_name.split(' ')[0]
 
 
 # --- HEADER (LOGHI E TITOLI) ---
@@ -164,8 +177,18 @@ with cols_voce[0]:
     st.selectbox("PERSONALITA (8)", options=OPTIONS_PERSONALITA, index=OPTIONS_PERSONALITA.index(get_current_value("8_PERSONALITA")), key="PERSONALITA")
 
 with cols_voce[1]:
-    # 9. VOICE
-    st.text_input("VOICE (9)", value=get_current_value("10_VOICE"), key="VOICE")
+    # 9. VOICE (Dropdown con voci Google)
+    # Cerchiamo il nome completo della voce (es. "it-IT-Wavenet-B (Uomo, HQ)")
+    # Se non lo trova, usa il nome del codice (es. "it-IT-Wavenet-B") per cercare l'indice.
+    current_voice_code = get_current_value("10_VOICE")
+    
+    # Cerchiamo l'indice corretto basato sul codice
+    try:
+        index = next(i for i, name in enumerate(OPTIONS_VOICE) if extract_voice_code(name) == current_voice_code)
+    except StopIteration:
+        index = 0  # Se non trova la voce salvata, usa la prima della lista
+        
+    st.selectbox("VOICE (9)", options=OPTIONS_VOICE, index=index, key="VOICE")
     
 with cols_voce[2]:
     # 10. ETA VOCALE DEL BOT (Dropdown)
@@ -207,7 +230,7 @@ with cols_channel[2]:
     st.selectbox("CHANNEL (Phone Inbound) (6)", options=OPTIONS_STATUS, index=OPTIONS_STATUS.index(get_current_value("6_CHANNEL_PHONE_INBOUND")), key="INBOUND")
 
 with cols_channel[3]:
-    # 7. CHANNEL (Phone Outbound) (Dropdown) -- CORREZIONE SINTASSI
+    # 7. CHANNEL (Phone Outbound) (Dropdown)
     st.selectbox("CHANNEL (Phone Outbound) (7)", options=OPTIONS_STATUS, index=OPTIONS_STATUS.index(get_current_value("7_CHANNEL_PHONE_OUTBOUND")), key="OUTBOUND")
 
 st.markdown("---")
@@ -218,7 +241,9 @@ st.session_state.config["general_params"]["1_ID"] = st.session_state["ID"]
 st.session_state.config["general_params"]["2_NAME"] = st.session_state["NAME"]
 st.session_state.config["general_params"]["3_GENDER"] = st.session_state["GENDER"]
 st.session_state.config["general_params"]["8_PERSONALITA"] = st.session_state["PERSONALITA"]
-st.session_state.config["general_params"]["10_VOICE"] = st.session_state["VOICE"]
+# SALVA IL CODICE VOCE ESTRATTO (NON IL NOME COMPLETO)
+st.session_state.config["general_params"]["10_VOICE"] = extract_voice_code(st.session_state["VOICE"]) 
+
 st.session_state.config["general_params"]["11_ETA_VOCALE_DEL_BOT"] = st.session_state["ETA"]
 st.session_state.config["general_params"]["12_LINGUE"] = st.session_state["LINGUE"]
 st.session_state.config["general_params"]["13_VELOCITA_DEL_PARLATO"] = st.session_state["VELOCITA"]
