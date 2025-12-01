@@ -9,9 +9,25 @@ from collections import OrderedDict
 st.set_page_config(layout="wide", page_title="Voicebot Configurator Avanzato")
 
 CONFIG_FILE = "voicebot_config.json"
+# Struttura dei 13 parametri generali
 DEFAULT_CONFIG = {
     "bot_name": "Nuovo Voicebot",
-    "general_params": {}, 
+    "general_params": {
+        "1_ID": "1",
+        "2_NAME": "ROBBY",
+        "3_GENDER": "MALE",
+        "4_CHANNEL_WHATSAPP": "OK",
+        "5_CHANNEL_CLICK2CALL": "OK",
+        "6_CHANNEL_PHONE_INBOUND": "OK",
+        "7_CHANNEL_PHONE_OUTBOUND": "KO",
+        "8_PERSONALITA": "EMPATHETIC",
+        "9_DISCUSSION_MGM": "",
+        "10_VOICE": "XXXX",
+        "11_ETA_VOCALE_DEL_BOT": "Adult",
+        "12_LINGUE": "IT",
+        "13_VELOCITA_DEL_PARLATO": "Media",
+        "14_MEMORIA_SESSIONE": "numero di cellulare",
+    },
     "enabled_features": {}
 }
 
@@ -82,45 +98,105 @@ try:
     # Mostra il logo se è stato caricato su GitHub
     st.image("logo_roar.png", width=150)
 except:
-    pass # Non mostrare nulla se il file non è stato caricato
+    pass 
 
 st.markdown("## 🤖 Configuratore Voicebot Avanzato")
 st.markdown("---")
 
-# --- 1. IMPOSTAZIONI GENERALI + 10 CAMPI (OTTIMIZZATO MOBILE) ---
-st.header("1. Impostazioni Generali")
+# --- 1. IMPOSTAZIONI GENERALI (I 13 PARAMETRI SPECIFICI) ---
+st.header("1. Parametri di Base del Voicebot")
 
-new_name = st.text_input(
-    "Nome del Voicebot:", 
-    st.session_state.config.get('bot_name', DEFAULT_CONFIG['bot_name'])
-)
-st.session_state.config['bot_name'] = new_name
+# Definizione delle opzioni per le dropdown list
+OPTIONS_GENDER = ["MALE", "FEMALE", "NEUTRAL", "CUSTOM"]
+OPTIONS_STATUS = ["OK", "KO"]
+OPTIONS_PERSONALITA = ["Friendly", "Professional", "Empathetic", "Playful", "Formal"]
+OPTIONS_ETA = ["Young", "Adult", "Senior"]
+OPTIONS_VELOCITA = ["Lenta", "Media", "Veloce"]
+OPTIONS_MEMORIA = ["numero di cellulare", "id specifico", "nome", "altra chiave identificativa"]
 
-# Area per i 10 campi aggiuntivi
-if 'general_params' not in st.session_state.config:
-    st.session_state.config['general_params'] = {}
 
-st.subheader("Parametri Aggiuntivi Personalizzati (10 Campi)")
-st.caption("Usa questi campi per impostazioni globali specifiche del tuo bot.")
+# Funzione per ottenere il valore corrente
+def get_current_value(key):
+    return st.session_state.config["general_params"].get(key, DEFAULT_CONFIG["general_params"].get(key, ""))
 
-# Ciclo for per creare 10 campi di testo - SENZA COLONNE PER MIGLIORE RESPONSIVITÀ MOBILE
-for i in range(1, 11):
-    param_key = f'parametro_{i}'
+
+# --- PARAMETRI DI BASE ---
+st.subheader("Configurazione Vocale e Identità")
+cols1 = st.columns(3)
+
+with cols1[0]:
+    st.text_input("ID (1)", value=get_current_value("1_ID"), key="ID")
+
+with cols1[1]:
+    st.text_input("NAME (2)", value=get_current_value("2_NAME"), key="NAME")
+
+with cols1[2]:
+    st.selectbox("GENDER (3)", options=OPTIONS_GENDER, index=OPTIONS_GENDER.index(get_current_value("3_GENDER")), key="GENDER")
+
+
+cols_voce = st.columns(3)
+
+with cols_voce[0]:
+    st.selectbox("PERSONALITA (8)", options=OPTIONS_PERSONALITA, index=OPTIONS_PERSONALITA.index(get_current_value("8_PERSONALITA")), key="PERSONALITA")
+
+with cols_voce[1]:
+    st.text_input("VOICE (9)", value=get_current_value("10_VOICE"), key="VOICE")
     
-    current_value = st.session_state.config['general_params'].get(param_key, "")
+with cols_voce[2]:
+    st.selectbox("ETA VOCALE DEL BOT (10)", options=OPTIONS_ETA, index=OPTIONS_ETA.index(get_current_value("11_ETA_VOCALE_DEL_BOT")), key="ETA")
 
-    # Utilizza una singola colonna per tutti i campi su tutti i dispositivi
-    new_value = st.text_input(
-        f"Campo di Configurazione {i}:", 
-        value=current_value,
-        key=f"general_{param_key}"
-    )
-    
-    st.session_state.config['general_params'][param_key] = new_value
+
+cols_lingua = st.columns(3)
+
+with cols_lingua[0]:
+    st.text_input("LINGUE (11)", value=get_current_value("12_LINGUE"), key="LINGUE")
+
+with cols_lingua[1]:
+    st.selectbox("VELOCITA DEL PARLATO (12)", options=OPTIONS_VELOCITA, index=OPTIONS_VELOCITA.index(get_current_value("13_VELOCITA_DEL_PARLATO")), key="VELOCITA")
+
+with cols_lingua[2]:
+    st.selectbox("MEMORIA SESSIONE (13)", options=OPTIONS_MEMORIA, index=OPTIONS_MEMORIA.index(get_current_value("14_MEMORIA_SESSIONE")), key="MEMORIA")
+
+st.text_input("DISCUSSION MGM (8)", value=get_current_value("9_DISCUSSION_MGM"), key="DISCUSSION")
+st.markdown("---")
+
+# --- PARAMETRI CANALI ---
+st.subheader("Abilitazione Canali (Status OK/KO)")
+cols_channel = st.columns(4)
+
+with cols_channel[0]:
+    st.selectbox("CHANNEL (WhatsApp) (4)", options=OPTIONS_STATUS, index=OPTIONS_STATUS.index(get_current_value("4_CHANNEL_WHATSAPP")), key="WHATSAPP")
+
+with cols_channel[1]:
+    st.selectbox("CHANNEL (Click2Call) (5)", options=OPTIONS_STATUS, index=OPTIONS_STATUS.index(get_current_value("5_CHANNEL_CLICK2CALL")), key="CLICK2CALL")
+
+with cols_channel[2]:
+    st.selectbox("CHANNEL (Phone Inbound) (6)", options=OPTIONS_STATUS, index=OPTIONS_STATUS.index(get_current_value("6_CHANNEL_PHONE_INBOUND")), key="INBOUND")
+
+with cols_channel[3]:
+    st.selectbox("CHANNEL (Phone Outbound) (7)", options=OPTIONS_STATUS, index=OPTIONS_STATUS.index(get_current_value("7_CHANNEL_PHONE_OUTBOUND")), key="OUTBOUND")
 
 st.markdown("---")
 
-# --- 2. ABILITAZIONE E CONFIGURAZIONE FUNZIONALITÀ (OTTIMIZZATO MOBILE) ---
+
+# --- Aggiorna i valori di sessione dopo l'interazione ---
+st.session_state.config["general_params"]["1_ID"] = st.session_state["ID"]
+st.session_state.config["general_params"]["2_NAME"] = st.session_state["NAME"]
+st.session_state.config["general_params"]["3_GENDER"] = st.session_state["GENDER"]
+st.session_state.config["general_params"]["8_PERSONALITA"] = st.session_state["PERSONALITA"]
+st.session_state.config["general_params"]["10_VOICE"] = st.session_state["VOICE"]
+st.session_state.config["general_params"]["11_ETA_VOCALE_DEL_BOT"] = st.session_state["ETA"]
+st.session_state.config["general_params"]["12_LINGUE"] = st.session_state["LINGUE"]
+st.session_state.config["general_params"]["13_VELOCITA_DEL_PARLATO"] = st.session_state["VELOCITA"]
+st.session_state.config["general_params"]["14_MEMORIA_SESSIONE"] = st.session_state["MEMORIA"]
+st.session_state.config["general_params"]["9_DISCUSSION_MGM"] = st.session_state["DISCUSSION"]
+st.session_state.config["general_params"]["4_CHANNEL_WHATSAPP"] = st.session_state["WHATSAPP"]
+st.session_state.config["general_params"]["5_CHANNEL_CLICK2CALL"] = st.session_state["CLICK2CALL"]
+st.session_state.config["general_params"]["6_CHANNEL_PHONE_INBOUND"] = st.session_state["INBOUND"]
+st.session_state.config["general_params"]["7_CHANNEL_PHONE_OUTBOUND"] = st.session_state["OUTBOUND"]
+
+
+# --- 2. ABILITAZIONE E CONFIGURAZIONE FUNZIONALITÀ ---
 st.header("2. Abilitazione e Parametri Funzionalità")
 st.info("Seleziona una funzionalità per abilitarla e vedi apparire i suoi parametri specifici qui sotto.")
 
@@ -133,7 +209,6 @@ with st.container(border=True):
         
         is_checked_init = feature_name in st.session_state.config['enabled_features']
         
-        # Uso st.checkbox diretto, eliminando l'uso delle colonne per mobile
         is_checked = st.checkbox(
             feature_name, 
             value=is_checked_init,
@@ -158,7 +233,6 @@ else:
         with st.expander(f"⚙️ Parametri: {feature_name}", expanded=True):
             feature_def = AVAILABLE_FEATURES[feature_name]
             
-            # Qui si possono usare le colonne dato che sono all'interno dell'expander
             param_cols = st.columns(2)
             param_i = 0
 
