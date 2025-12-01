@@ -3,7 +3,10 @@ import json
 import os
 from collections import OrderedDict
 
-# --- CONFIGURAZIONE E STRUTTURA DATI ---
+# --- CONFIGURAZIONE GLOBALE ---
+
+# Imposta il layout wide e il titolo
+st.set_page_config(layout="wide", page_title="Voicebot Configurator Avanzato")
 
 CONFIG_FILE = "voicebot_config.json"
 DEFAULT_CONFIG = {
@@ -12,7 +15,7 @@ DEFAULT_CONFIG = {
     "enabled_features": {}
 }
 
-# Funzioni di caricamento/salvataggio (Gestiscono gli errori se il file è corrotto)
+# Funzioni di caricamento/salvataggio
 def load_config():
     """Carica la configurazione esistente o quella di default."""
     if os.path.exists(CONFIG_FILE):
@@ -25,7 +28,6 @@ def load_config():
                     "enabled_features": data.get("enabled_features", DEFAULT_CONFIG["enabled_features"])
                 }
         except json.JSONDecodeError:
-            st.warning("⚠️ Errore: Il file di configurazione è corrotto. Ritorno alla configurazione di default.")
             return DEFAULT_CONFIG
     return DEFAULT_CONFIG
 
@@ -71,14 +73,21 @@ AVAILABLE_FEATURES = OrderedDict([
 
 # --- INTERFACCIA STREAMLIT ---
 
-st.set_page_config(layout="wide", page_title="Voicebot Configurator Avanzato")
-st.title("🤖 Configuratore Voicebot Avanzato")
-
 # Inizializza o carica lo stato di sessione
 if 'config' not in st.session_state:
     st.session_state.config = load_config()
 
-# --- 1. IMPOSTAZIONI GENERALI + 10 CAMPI ---
+# --- HEADER (LOGHI E TITOLI) ---
+try:
+    # Mostra il logo se è stato caricato su GitHub
+    st.image("logo_roar.png", width=150)
+except:
+    pass # Non mostrare nulla se il file non è stato caricato
+
+st.markdown("## 🤖 Configuratore Voicebot Avanzato")
+st.markdown("---")
+
+# --- 1. IMPOSTAZIONI GENERALI + 10 CAMPI (OTTIMIZZATO MOBILE) ---
 st.header("1. Impostazioni Generali")
 
 new_name = st.text_input(
@@ -94,32 +103,29 @@ if 'general_params' not in st.session_state.config:
 st.subheader("Parametri Aggiuntivi Personalizzati (10 Campi)")
 st.caption("Usa questi campi per impostazioni globali specifiche del tuo bot.")
 
-# Ciclo for per creare 10 campi di testo facilmente
-cols_general = st.columns(2)
+# Ciclo for per creare 10 campi di testo - SENZA COLONNE PER MIGLIORE RESPONSIVITÀ MOBILE
 for i in range(1, 11):
     param_key = f'parametro_{i}'
     
     current_value = st.session_state.config['general_params'].get(param_key, "")
 
-    with cols_general[(i-1) % 2]:
-        new_value = st.text_input(
-            f"Campo di Configurazione {i}:", 
-            value=current_value,
-            key=f"general_{param_key}"
-        )
+    # Utilizza una singola colonna per tutti i campi su tutti i dispositivi
+    new_value = st.text_input(
+        f"Campo di Configurazione {i}:", 
+        value=current_value,
+        key=f"general_{param_key}"
+    )
     
     st.session_state.config['general_params'][param_key] = new_value
 
 st.markdown("---")
 
-# --- 2. ABILITAZIONE E CONFIGURAZIONE FUNZIONALITÀ ---
+# --- 2. ABILITAZIONE E CONFIGURAZIONE FUNZIONALITÀ (OTTIMIZZATO MOBILE) ---
 st.header("2. Abilitazione e Parametri Funzionalità")
 st.info("Seleziona una funzionalità per abilitarla e vedi apparire i suoi parametri specifici qui sotto.")
 
 # Contenitore per le checkbox
 enabled_features = {}
-cols_features = st.columns(2)
-i = 0
 
 st.subheader("Seleziona Funzionalità:")
 with st.container(border=True):
@@ -127,7 +133,8 @@ with st.container(border=True):
         
         is_checked_init = feature_name in st.session_state.config['enabled_features']
         
-        is_checked = cols_features[i % 2].checkbox(
+        # Uso st.checkbox diretto, eliminando l'uso delle colonne per mobile
+        is_checked = st.checkbox(
             feature_name, 
             value=is_checked_init,
             help=feature_data['description'],
@@ -138,8 +145,6 @@ with st.container(border=True):
             current_params_data = st.session_state.config['enabled_features'].get(feature_name, {"params": {}})
             enabled_features[feature_name] = {"enabled": True, "params": current_params_data.get("params", {})}
             
-        i += 1
-
 st.markdown("---")
 
 # --- 3. CONFIGURAZIONE DEI PARAMETRI ---
@@ -153,41 +158,46 @@ else:
         with st.expander(f"⚙️ Parametri: {feature_name}", expanded=True):
             feature_def = AVAILABLE_FEATURES[feature_name]
             
+            # Qui si possono usare le colonne dato che sono all'interno dell'expander
+            param_cols = st.columns(2)
+            param_i = 0
+
             for param_key, param_info in feature_def['params'].items():
                 label = param_info['label']
                 param_type = param_info['type']
                 default_value = param_info['default']
                 
                 current_value = enabled_features[feature_name]["params"].get(param_key, default_value)
-
                 new_value = None
-                
-                if param_type == "text":
-                    new_value = st.text_input(label, value=str(current_value), key=f"{feature_name}_{param_key}")
-                elif param_type == "number":
-                    try:
-                        step_value = 1 if isinstance(default_value, int) else 0.1
-                        new_value = st.number_input(label, value=float(current_value), step=step_value, key=f"{feature_name}_{param_key}")
-                    except ValueError:
-                         new_value = st.number_input(label, value=float(default_value), key=f"{feature_name}_{param_key}")
-                elif param_type == "select":
-                    options = param_info.get("options", [])
-                    try:
-                        index = options.index(current_value)
-                    except ValueError:
-                        index = 0
-                        
-                    new_value = st.selectbox(label, options, index=index, key=f"{feature_name}_{param_key}")
+
+                with param_cols[param_i % 2]:
+                    if param_type == "text":
+                        new_value = st.text_input(label, value=str(current_value), key=f"{feature_name}_{param_key}")
+                    elif param_type == "number":
+                        try:
+                            step_value = 1 if isinstance(default_value, int) else 0.1
+                            new_value = st.number_input(label, value=float(current_value), step=step_value, key=f"{feature_name}_{param_key}")
+                        except ValueError:
+                            new_value = st.number_input(label, value=float(default_value), key=f"{feature_name}_{param_key}")
+                    elif param_type == "select":
+                        options = param_info.get("options", [])
+                        try:
+                            index = options.index(current_value)
+                        except ValueError:
+                            index = 0
+                        new_value = st.selectbox(label, options, index=index, key=f"{feature_name}_{param_key}")
 
                 if new_value is not None:
                     enabled_features[feature_name]["params"][param_key] = new_value
+                
+                param_i += 1
 
 # Aggiorna la configurazione finale nello stato di sessione
 st.session_state.config['enabled_features'] = enabled_features
 
 st.markdown("---")
 
-# --- 4. RIEPILOGO E SALVATAGGIO CON DOWNLOAD ---
+# --- 4. RIEPILOGO E SALVATAGGIO (DOWNLOAD) ---
 st.header("4. Riepilogo e Salvataggio (Download)")
 
 st.subheader("Anteprima Configurazione Voicebot (JSON)")
@@ -211,4 +221,3 @@ col_download.download_button(
 )
 
 st.markdown("---")
-st.info(f"Clicca 'Salva configurazione su server' per rendere persistenti le modifiche online, oppure 'Scarica file configurazione' per ottenere il file JSON sul tuo computer.")
