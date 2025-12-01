@@ -8,7 +8,7 @@ from collections import OrderedDict
 CONFIG_FILE = "voicebot_config.json"
 DEFAULT_CONFIG = {
     "bot_name": "Nuovo Voicebot",
-    "general_params": {}, # Aggiunto per i 10 campi
+    "general_params": {}, 
     "enabled_features": {}
 }
 
@@ -30,7 +30,7 @@ def load_config():
     return DEFAULT_CONFIG
 
 def save_config(config_data):
-    """Salva la configurazione corrente in un file JSON."""
+    """Salva la configurazione corrente in un file JSON sul server."""
     try:
         with open(CONFIG_FILE, 'w') as f:
             json.dump(config_data, f, indent=4)
@@ -78,7 +78,7 @@ st.title("🤖 Configuratore Voicebot Avanzato")
 if 'config' not in st.session_state:
     st.session_state.config = load_config()
 
-# --- 1. IMPOSTAZIONI GENERALI + 10 CAMPI (Implementazione richiesta) ---
+# --- 1. IMPOSTAZIONI GENERALI + 10 CAMPI ---
 st.header("1. Impostazioni Generali")
 
 new_name = st.text_input(
@@ -99,7 +99,6 @@ cols_general = st.columns(2)
 for i in range(1, 11):
     param_key = f'parametro_{i}'
     
-    # Recupera il valore corrente o imposta una stringa vuota come default
     current_value = st.session_state.config['general_params'].get(param_key, "")
 
     with cols_general[(i-1) % 2]:
@@ -109,7 +108,6 @@ for i in range(1, 11):
             key=f"general_{param_key}"
         )
     
-    # Salva il nuovo valore nella configurazione di sessione
     st.session_state.config['general_params'][param_key] = new_value
 
 st.markdown("---")
@@ -160,7 +158,6 @@ else:
                 param_type = param_info['type']
                 default_value = param_info['default']
                 
-                # Ottieni il valore corrente salvato
                 current_value = enabled_features[feature_name]["params"].get(param_key, default_value)
 
                 new_value = None
@@ -175,7 +172,6 @@ else:
                          new_value = st.number_input(label, value=float(default_value), key=f"{feature_name}_{param_key}")
                 elif param_type == "select":
                     options = param_info.get("options", [])
-                    # Trova l'indice del valore corrente per impostare il selectbox
                     try:
                         index = options.index(current_value)
                     except ValueError:
@@ -191,14 +187,28 @@ st.session_state.config['enabled_features'] = enabled_features
 
 st.markdown("---")
 
-# --- 4. RIEPILOGO E SALVATAGGIO ---
-st.header("4. Riepilogo e Salvataggio")
+# --- 4. RIEPILOGO E SALVATAGGIO CON DOWNLOAD ---
+st.header("4. Riepilogo e Salvataggio (Download)")
 
 st.subheader("Anteprima Configurazione Voicebot (JSON)")
 st.json(st.session_state.config)
 
-if st.button("💾 SALVA CONFIGURAZIONE SU FILE", type="primary"):
+# Creo il file JSON per il download
+json_data = json.dumps(st.session_state.config, indent=4)
+
+col_save, col_download = st.columns(2)
+
+# Bottone per salvare sul server
+if col_save.button("💾 SALVA CONFIGURAZIONE SU SERVER", type="primary"):
     save_config(st.session_state.config)
 
+# Bottone per scaricare il file JSON generato
+col_download.download_button(
+    label="⬇️ SCARICA FILE CONFIGURAZIONE (.json)",
+    data=json_data,
+    file_name=CONFIG_FILE,
+    mime="application/json"
+)
+
 st.markdown("---")
-st.info(f"Il file di configurazione `{CONFIG_FILE}` verrà creato o aggiornato.")
+st.info(f"Clicca 'Salva configurazione su server' per rendere persistenti le modifiche online, oppure 'Scarica file configurazione' per ottenere il file JSON sul tuo computer.")
