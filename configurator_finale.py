@@ -416,4 +416,4 @@ col_email.markdown(
     unsafe_allow_html=True
 )
 
-st.warning("⚠️ AVVISO: Il salvataggio su server è stato rimosso. Usa i pulsanti sopra per scaricare il file JSON o inviare un riepilogo via email. Non è possibile allegare il file JSON direttamente via email.")
+st.warning("⚠️ AVVISO: Usa i pulsanti sopra per scaricare il file JSON e inviarlo come riepilogo via email. Non è possibile allegare il file JSON direttamente via email.")
