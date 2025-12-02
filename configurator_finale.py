@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+import urllib.parse
 from collections import OrderedDict
 
 # --- DEFINIZIONE GLOBALE DELLO SCHEMA E OPZIONI ---
@@ -78,11 +79,8 @@ def load_config():
             with open(CONFIG_FILE, 'r') as f:
                 data = json.load(f)
             
-            # --- CORREZIONE CRITICA AGGIUNTA ---
-            # Se il file salvato non contiene le chiavi principali della NUOVA struttura, 
-            # forziamo il ritorno al DEFAULT per evitare KeyError.
+            # --- CORREZIONE CRITICA PER KEY ERROR ---
             if not all(key in data for key in ['botParams', 'business', 'tools']):
-                st.warning("Configurazione salvata in formato vecchio o corrotto. Carico i valori di default.")
                 return DEFAULT_CONFIG
             
             return data
@@ -111,9 +109,16 @@ st.set_page_config(layout="wide", page_title="Configuratore JSON Schema Voicebot
 if 'config' not in st.session_state:
     st.session_state.config = load_config()
 
+# --- CORREZIONE AGGIUNTIVA: Garantire l'esistenza delle chiavi principali nella sessione ---
+# Inizializza le chiavi mancanti con il default se la cache Streamlit ha caricato una struttura parziale.
+st.session_state.config['business'] = st.session_state.config.get('business', DEFAULT_CONFIG['business'])
+st.session_state.config['botParams'] = st.session_state.config.get('botParams', DEFAULT_CONFIG['botParams'])
+st.session_state.config['tools'] = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
+
+
 # --- HEADER ---
 try:
-    st.image("logo_roar.png", width=200) 
+    st.image("ROAR LOGO.png", width=200) # Assicurati che il nome del file del logo sia corretto
 except:
     pass 
 
@@ -122,14 +127,9 @@ st.caption("Configura i parametri secondo lo schema JSON richiesto.")
 st.markdown("---")
 
 
-# --- INIZIALIZZAZIONE STRUTTURA FRONTEND (Protezione da KeyError) ---
-# Usiamo .get() con il DEFAULT per inizializzare le variabili anche se la sessione è vuota
-current_business = st.session_state.config.get('business', DEFAULT_CONFIG['business'])
-current_params = st.session_state.config.get('botParams', DEFAULT_CONFIG['botParams'])
-current_tools = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
-
 # --- 1. SEZIONE BUSINESS ---
 st.header("1. 🏢 Informazioni Aziendali (Business)")
+current_business = st.session_state.config['business']
 
 cols_b1 = st.columns(2)
 with cols_b1[0]:
@@ -154,6 +154,7 @@ st.markdown("---")
 
 # --- 2. SEZIONE PARAMETRI BOT (botParams) ---
 st.header("2. ⚙️ Parametri di Configurazione del Bot")
+current_params = st.session_state.config['botParams']
 
 # --- RIGA 1: Identità e Contatti ---
 st.subheader("Identità e Contatti")
@@ -297,7 +298,7 @@ st.markdown("---")
 
 # --- 3. SEZIONE CANALI e TOOLS ---
 st.header("3. 🛠️ Strumenti e Canali Abilitati (Tools)")
-current_tools = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
+current_tools = st.session_state.config['tools']
 
 st.caption("Usa questa sezione per abilitare/disabilitare i canali di comunicazione e gli strumenti del bot.")
 
@@ -380,7 +381,7 @@ json_data = json.dumps(st.session_state.config, indent=4)
 destinatario = st.session_state.config['botParams']['email']
 nome_societa = st.session_state.config['business']['ragioneSociale']
 
-# Costruisco il corpo dell'email (rimosso il JSON data nel corpo per evitare limiti di URL)
+# Costruisco il corpo dell'email
 email_subject = urllib.parse.quote(f"Configurazione Bot: {nome_societa} - Riepilogo")
 email_body_text = f"""Ciao,
 
@@ -395,9 +396,6 @@ Lingue Disponibili: {', '.join(current_params['availableLanguages'])}
 Stile: {', '.join(current_params['interactionStyle'])}
 """
 email_body = urllib.parse.quote(email_body_text)
-
-# Creo il link mailto:
-mailto_link = f"mailto:{destinatario}?cc={DEFAULT_CONFIG['botParams']['email']}&subject={email_subject}&body={email_body}"
 
 
 col_save, col_download, col_email = st.columns(3)
@@ -417,7 +415,7 @@ col_download.download_button(
 # Pulsante Email (usa st.markdown per il link mailto)
 col_email.markdown(
     f"""
-    <a href="{mailto_link}" target="_blank">
+    <a href="mailto:{destinatario}?cc={DEFAULT_CONFIG['botParams']['email']}&subject={email_subject}&body={email_body}" target="_blank">
         <button style="background-color: #f63366; color: white; border: none; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 4px 2px; cursor: pointer; border-radius: 4px;">
             📧 INVIA RIEPILOGO EMAIL
         </button>
@@ -425,5 +423,3 @@ col_email.markdown(
     """,
     unsafe_allow_html=True
 )
-
-st.warning("⚠️ AVVISO: L'invio dell'email aprirà il tuo client di posta locale con i campi precompilati. Non è possibile allegare il file JSON direttamente.")
