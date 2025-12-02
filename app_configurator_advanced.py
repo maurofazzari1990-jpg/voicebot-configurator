@@ -42,8 +42,8 @@ DEFAULT_CONFIG = {
         "botVoice": BOT_VOICES[0],
         "serviceDescription": "Assistente virtuale per il supporto vendite.",
         "serviceIntroduction": True,
-        "availableLanguages": ["italian"], # Default su una lista valida
-        "startLanguage": "italian", # Deve essere nella lista sopra
+        "availableLanguages": ["italian"],
+        "startLanguage": "italian",
         "linguisticForm": ["neutrale"],
         "interactionStyle": ["professionale", "amichevole"],
         "verbosity": "esaustivo ma conciso",
@@ -59,6 +59,7 @@ DEFAULT_CONFIG = {
         "allowedScheduleMeeting": False,
         "allowedRequestCallback": True,
         "allowedHangup": True,
+        "allowedSendSMS": True # NUOVO PARAMETRO per SMS
     },
     "business": {
         "ragioneSociale": "ROAR S.p.A.",
@@ -78,11 +79,8 @@ def load_config():
                 data = json.load(f)
             
             # --- CORREZIONE CRITICA PER KEY ERROR ---
-            # Se il file salvato non contiene le chiavi principali (business, botParams)
-            # a causa di una struttura vecchia, forziamo il ritorno al DEFAULT.
             if 'botParams' not in data or 'business' not in data:
                 return DEFAULT_CONFIG
-            # ----------------------------------------
             
             return data
         except json.JSONDecodeError:
@@ -97,6 +95,10 @@ def save_config(config_data):
         st.success(f"✅ Configurazione salvata con successo in '{CONFIG_FILE}'")
     except Exception as e:
         st.error(f"❌ Errore durante il salvataggio: {e}")
+
+# Funzione per estrarre il codice voce dal nome completo
+def extract_voice_code(full_name):
+    return full_name.split(' ')[0]
 
 # --- INTERFACCIA STREAMLIT ---
 
@@ -118,7 +120,6 @@ st.markdown("---")
 
 # --- 1. SEZIONE BUSINESS ---
 st.header("1. 🏢 Informazioni Aziendali (Business)")
-# Usiamo .get() con il default per evitare KeyError se la struttura non è ancora completa
 current_business = st.session_state.config.get('business', DEFAULT_CONFIG['business'])
 
 cols_b1 = st.columns(2)
@@ -163,7 +164,6 @@ with cols_p1[1]:
         key="PARAM_GENDER"
     )
 with cols_p1[2]:
-    # Campo per l'email 
     current_params['email'] = st.text_input(
         "Email (Per ricezione file)", 
         value=current_params.get('email', DEFAULT_CONFIG['botParams']['email']),
@@ -190,14 +190,12 @@ with cols_p2[1]:
     # startLanguage (Selectbox, DEVE essere una lingua selezionata in 'availableLanguages')
     start_lang_options = current_params.get('availableLanguages', [])
     
-    # Prepara l'indice e il valore di default per startLanguage
     start_lang_value = current_params.get('startLanguage', 'italian')
     start_index = 0
     if start_lang_options:
         try:
             start_index = start_lang_options.index(start_lang_value)
         except ValueError:
-            # Se la lingua salvata non è nella lista delle disponibili, usa la prima disponibile
             start_lang_value = start_lang_options[0]
             start_index = 0
             
@@ -289,47 +287,68 @@ with cols_tech[2]:
 st.markdown("---")
 
 
-# --- 3. SEZIONE TOOLS ---
-st.header("3. 🛠️ Strumenti Abilitati (Tools)")
+# --- 3. SEZIONE CANALI e TOOLS ---
+st.header("3. 🛠️ Strumenti e Canali Abilitati (Tools)")
 current_tools = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
 
-st.caption("Abilita/disabilita le funzionalità del bot come da schema JSON.")
-cols_t1 = st.columns(3)
+st.caption("Usa questa sezione per abilitare/disabilitare i canali di comunicazione e gli strumenti del bot.")
 
-with cols_t1[0]:
-    current_tools['allowedContactAgent'] = st.checkbox(
-        "Contattare Agente Umano",
-        value=current_tools.get('allowedContactAgent'),
-        key="TOOL_CONTACT_AGENT"
+# --- CHECKLIST CANALI ---
+st.subheader("Checklist Canali di Comunicazione")
+
+cols_canali = st.columns(3)
+
+with cols_canali[0]:
+    # Telefono inbound (Mappato a allowedHangup)
+    current_tools['allowedHangup'] = st.checkbox(
+        "✅ Telefono Inbound",
+        value=current_tools.get('allowedHangup'),
+        key="TOOL_PHONE_INBOUND"
     )
+    # WhatsApp (Mappato a allowedContactAgent)
+    current_tools['allowedContactAgent'] = st.checkbox(
+        "✅ WhatsApp",
+        value=current_tools.get('allowedContactAgent'),
+        key="TOOL_WHATSAPP"
+    )
+    # SMS (Mappato a allowedSendSMS) - NUOVO PARAMETRO
+    current_tools['allowedSendSMS'] = st.checkbox(
+        "✅ SMS",
+        value=current_tools.get('allowedSendSMS'),
+        key="TOOL_SMS"
+    )
+
+with cols_canali[1]:
+    # Telefono Outbound (Mappato a allowedRequestCallback)
+    current_tools['allowedRequestCallback'] = st.checkbox(
+        "✅ Telefono Outbound (Recall)",
+        value=current_tools.get('allowedRequestCallback'),
+        key="TOOL_PHONE_OUTBOUND"
+    )
+    # Click2Call (Mappato a allowedScheduleMeeting)
+    current_tools['allowedScheduleMeeting'] = st.checkbox(
+        "✅ Click2Call / Programma Riunioni",
+        value=current_tools.get('allowedScheduleMeeting'),
+        key="TOOL_CLICK2CALL"
+    )
+    # Email (Mappato a allowedSendEmail)
+    current_tools['allowedSendEmail'] = st.checkbox(
+        "✅ Email",
+        value=current_tools.get('allowedSendEmail'),
+        key="TOOL_EMAIL"
+    )
+
+st.markdown("---")
+
+st.subheader("Strumenti e Funzionalità Aggiuntive")
+
+cols_tools = st.columns(2)
+
+with cols_tools[0]:
     current_tools['allowedSendDocuments'] = st.checkbox(
         "Inviare Documenti",
         value=current_tools.get('allowedSendDocuments'),
         key="TOOL_SEND_DOCS"
-    )
-
-with cols_t1[1]:
-    current_tools['allowedSendEmail'] = st.checkbox(
-        "Inviare Email",
-        value=current_tools.get('allowedSendEmail'),
-        key="TOOL_SEND_EMAIL"
-    )
-    current_tools['allowedScheduleMeeting'] = st.checkbox(
-        "Programmare Riunioni",
-        value=current_tools.get('allowedScheduleMeeting'),
-        key="TOOL_SCHEDULE"
-    )
-
-with cols_t1[2]:
-    current_tools['allowedRequestCallback'] = st.checkbox(
-        "Richiedere Callback",
-        value=current_tools.get('allowedRequestCallback'),
-        key="TOOL_CALLBACK"
-    )
-    current_tools['allowedHangup'] = st.checkbox(
-        "Terminare Chiamata (Hangup)",
-        value=current_tools.get('allowedHangup'),
-        key="TOOL_HANGUP"
     )
 
 st.markdown("---")
