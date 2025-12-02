@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 # --- DEFINIZIONE GLOBALE DELLO SCHEMA E OPZIONI ---
 
-CONFIG_FILE = "voicebot_config.json"
+CONFIG_FILE = "voicebot_config.json" # Mantenuto per la funzione load_config
 
 # --- OPZIONI DEFINITE DALLO SCHEMA JSON ---
 BOT_GENDERS = ["male", "female", "neutral"]
@@ -89,14 +89,7 @@ def load_config():
             return DEFAULT_CONFIG 
     return DEFAULT_CONFIG
 
-def save_config(config_data):
-    """Salva la configurazione corrente in un file JSON sul server."""
-    try:
-        with open(CONFIG_FILE, 'w') as f:
-            json.dump(config_data, f, indent=4)
-        st.success(f"✅ Configurazione salvata con successo in '{CONFIG_FILE}'")
-    except Exception as e:
-        st.error(f"❌ Errore durante il salvataggio: {e}")
+# La funzione save_config è stata rimossa perché non più utilizzata.
 
 # Funzione per estrarre il codice voce dal nome completo
 def extract_voice_code(full_name):
@@ -110,7 +103,6 @@ if 'config' not in st.session_state:
     st.session_state.config = load_config()
 
 # --- CORREZIONE AGGIUNTIVA: Garantire l'esistenza delle chiavi principali nella sessione ---
-# Inizializza le chiavi mancanti con il default se la cache Streamlit ha caricato una struttura parziale.
 st.session_state.config['business'] = st.session_state.config.get('business', DEFAULT_CONFIG['business'])
 st.session_state.config['botParams'] = st.session_state.config.get('botParams', DEFAULT_CONFIG['botParams'])
 st.session_state.config['tools'] = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
@@ -118,7 +110,8 @@ st.session_state.config['tools'] = st.session_state.config.get('tools', DEFAULT_
 
 # --- HEADER ---
 try:
-    st.image("ROAR LOGO.png", width=200) # Assicurati che il nome del file del logo sia corretto
+    # Ho corretto il nome del file immagine usando lo screenshot fornito: ROAR LOGO.png
+    st.image("ROAR LOGO.png", width=200) 
 except:
     pass 
 
@@ -362,12 +355,12 @@ with cols_tools[0]:
 
 st.markdown("---")
 
-# --- 4. SALVATAGGIO E DOWNLOAD ---
+# --- 4. RIEPILOGO E DOWNLOAD (PULSANTI AGGIORNATI) ---
 st.header("4. 💾 Riepilogo e Download")
 
 st.subheader("Anteprima Configurazione JSON")
 
-# Sostituiamo i dati nella sessione con i dati modificati
+# Aggiorniamo i dati della sessione
 st.session_state.config['business'] = current_business
 st.session_state.config['botParams'] = current_params
 st.session_state.config['tools'] = current_tools
@@ -398,10 +391,8 @@ Stile: {', '.join(current_params['interactionStyle'])}
 email_body = urllib.parse.quote(email_body_text)
 
 
-col_save, col_download, col_email = st.columns(3)
-
-if col_save.button("💾 SALVA CONFIGURAZIONE SU SERVER", type="primary"):
-    save_config(st.session_state.config)
+# --- ADATTAMENTO A DUE COLONNE ---
+col_download, col_email = st.columns(2)
 
 filename = f"{st.session_state.config['business']['ragioneSociale'].replace(' ', '_')}_config.json"
 
@@ -409,7 +400,8 @@ col_download.download_button(
     label="⬇️ SCARICA FILE CONFIGURAZIONE (.json)",
     data=json_data,
     file_name=filename,
-    mime="application/json"
+    mime="application/json",
+    type="primary" # Aggiungo primary al download
 )
 
 # Pulsante Email (usa st.markdown per il link mailto)
@@ -423,3 +415,5 @@ col_email.markdown(
     """,
     unsafe_allow_html=True
 )
+
+st.warning("⚠️ AVVISO: Il salvataggio su server è stato rimosso. Usa i pulsanti sopra per scaricare il file JSON o inviare un riepilogo via email. Non è possibile allegare il file JSON direttamente via email.")
