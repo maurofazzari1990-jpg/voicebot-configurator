@@ -3,48 +3,38 @@ import json
 import os
 from collections import OrderedDict
 
-# --- STRUTTURA JSON SCHEMA (Per definire opzioni e mapping) ---
+# --- DEFINIZIONE GLOBALE DELLO SCHEMA E OPZIONI ---
 
-# Voci del bot definite nello schema (botVoice)
+CONFIG_FILE = "voicebot_config.json"
+
+# --- OPZIONI DEFINITE DALLO SCHEMA JSON ---
+BOT_GENDERS = ["male", "female", "neutral"]
 BOT_VOICES = [
     "f-Achernar", "m-Achird", "m-Algenib", "m-Algieba", "m-Alnilam", "f-Aoede", "f-Autonoe", "f-Callirrhoe", 
     "m-Caronte", "f-Despina", "m-Encelado", "f-Erinome", "m-Fenrir", "f-Gacrux", "m-Giapeto", "f-Kore", 
     "f-Laomedeia", "f-Leda", "m-Orus", "f-Pulcherrima", "m-Puck", "m-Rasalgethi", "m-Sadachbia", 
     "m-Sadaltager", "m-Schedar", "f-Sulafat", "m-Umbriel", "f-Vindemiatrix", "f-Zephyr", "m-Zubenelgenubi"
 ]
-
-# Lingue disponibili definite nello schema (availableLanguages)
 AVAILABLE_LANGUAGES = [
     "german", "english", "spanish", "french", "italian", "japanese", "dutch", "polish", 
     "portuguese", "russian", "turkish", "catalan", "croatian", "danish", "finnish", 
     "greek", "hindi", "korean", "romanian", "swedish", "ukrainian", "vietnamese"
 ]
-
-# Stili di interazione definiti nello schema (interactionStyle)
+LINGUISTIC_FORMS = ["formale", "informale", "neutrale", "tecnico", "burocratico", "persuasivo", "semplificato"]
 INTERACTION_STYLES = [
     "conversazionale", "amichevole", "professionale", "rassicurante", "divertente", 
     "empatico", "servizievole", "curioso", "assertivo", "accogliente", "paziente", 
     "inclusivo", "affidabile"
 ]
-
-# Livelli di conoscenza generale definiti nello schema (useOfGeneralKnowledge)
+VERBOSITY_LEVELS = ["conciso", "dettagliato", "esaustivo ma conciso", "esaustivo", "contestuale"]
 KNOWLEDGE_LEVELS = [
     "none", "low", "low + open questions", "moderate", "moderate + open questions", 
     "high", "high + open questions"
 ]
-
-# Mappatura delle funzionalità del tuo vecchio configuratore (per riutilizzare la Sezione 2)
-OLD_FEATURE_MAPPING = OrderedDict([
-    ("allowedContactAgent", "allowedContactAgent"),
-    ("allowedSendEmail", "allowedSendEmail"),
-    ("allowedScheduleMeeting", "allowedScheduleMeeting"),
-    ("allowedRequestCallback", "allowedRequestCallback"),
-    ("allowedHangup", "allowedHangup"),
-    # Usiamo un placeholder per le altre che non sono mappate 
-])
+LLM_MODELS = ["gpt-4.1", "gemini-2.5-flash", "o4-mini", "gpt-oss-120b"]
 
 
-CONFIG_FILE = "voicebot_config.json"
+# Struttura dei valori di default basata sullo schema JSON
 DEFAULT_CONFIG = {
     "botParams": {
         "botName": "ROBBY",
@@ -52,15 +42,15 @@ DEFAULT_CONFIG = {
         "botVoice": BOT_VOICES[0],
         "serviceDescription": "Assistente virtuale per il supporto vendite.",
         "serviceIntroduction": True,
-        "availableLanguages": ["italian", "english"],
-        "startLanguage": "italian",
+        "availableLanguages": ["italian"], # Default su una lista valida
+        "startLanguage": "italian", # Deve essere nella lista sopra
         "linguisticForm": ["neutrale"],
         "interactionStyle": ["professionale", "amichevole"],
         "verbosity": "esaustivo ma conciso",
         "useOfGeneralKnowledge": "low",
         "llmModel": "gemini-2.5-flash",
         "allowedSessionHistory": True,
-        "email": "nome.utente@example.com"
+        "email": "mauro.fazzari@roarinc.com"
     },
     "tools": {
         "allowedContactAgent": True,
@@ -81,11 +71,20 @@ DEFAULT_CONFIG = {
 # --- FUNZIONI UTILI ---
 
 def load_config():
-    """Carica la configurazione esistente o quella di default."""
+    """Carica la configurazione esistente o quella di default (correzione per KeyError)."""
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+            
+            # --- CORREZIONE CRITICA PER KEY ERROR ---
+            # Se il file salvato non contiene le chiavi principali (business, botParams)
+            # a causa di una struttura vecchia, forziamo il ritorno al DEFAULT.
+            if 'botParams' not in data or 'business' not in data:
+                return DEFAULT_CONFIG
+            # ----------------------------------------
+            
+            return data
         except json.JSONDecodeError:
             return DEFAULT_CONFIG 
     return DEFAULT_CONFIG
@@ -113,13 +112,14 @@ except:
     pass 
 
 st.markdown("## 🤖 Configuratore JSON Schema Voicebot")
-st.caption("Configura i parametri secondo lo schema richiesto.")
+st.caption("Configura i parametri secondo lo schema JSON richiesto.")
 st.markdown("---")
 
 
 # --- 1. SEZIONE BUSINESS ---
 st.header("1. 🏢 Informazioni Aziendali (Business)")
-current_business = st.session_state.config['business']
+# Usiamo .get() con il default per evitare KeyError se la struttura non è ancora completa
+current_business = st.session_state.config.get('business', DEFAULT_CONFIG['business'])
 
 cols_b1 = st.columns(2)
 with cols_b1[0]:
@@ -144,7 +144,7 @@ st.markdown("---")
 
 # --- 2. SEZIONE PARAMETRI BOT (botParams) ---
 st.header("2. ⚙️ Parametri di Configurazione del Bot")
-current_params = st.session_state.config['botParams']
+current_params = st.session_state.config.get('botParams', DEFAULT_CONFIG['botParams'])
 
 # --- RIGA 1: Identità e Contatti ---
 st.subheader("Identità e Contatti")
@@ -158,12 +158,12 @@ with cols_p1[0]:
 with cols_p1[1]:
     current_params['botGender'] = st.selectbox(
         "Genere del Bot (botGender)", 
-        options=["male", "female", "neutral"], 
-        index=["male", "female", "neutral"].index(current_params.get('botGender')),
+        options=BOT_GENDERS, 
+        index=BOT_GENDERS.index(current_params.get('botGender')),
         key="PARAM_GENDER"
     )
 with cols_p1[2]:
-    # Campo per l'email (non nello schema botParams, ma utile per la distribuzione)
+    # Campo per l'email 
     current_params['email'] = st.text_input(
         "Email (Per ricezione file)", 
         value=current_params.get('email', DEFAULT_CONFIG['botParams']['email']),
@@ -189,17 +189,18 @@ with cols_p2[0]:
 with cols_p2[1]:
     # startLanguage (Selectbox, DEVE essere una lingua selezionata in 'availableLanguages')
     start_lang_options = current_params.get('availableLanguages', [])
-    if not start_lang_options:
-        st.warning("Seleziona prima le Lingue Disponibili. startLanguage sarà impostato sul default.")
-        current_params['startLanguage'] = "italian" 
-        start_index = 0
-    else:
+    
+    # Prepara l'indice e il valore di default per startLanguage
+    start_lang_value = current_params.get('startLanguage', 'italian')
+    start_index = 0
+    if start_lang_options:
         try:
-            start_index = start_lang_options.index(current_params.get('startLanguage'))
+            start_index = start_lang_options.index(start_lang_value)
         except ValueError:
-            start_index = 0 # Usa la prima lingua disponibile se la precedente non esiste più
-            current_params['startLanguage'] = start_lang_options[0]
-
+            # Se la lingua salvata non è nella lista delle disponibili, usa la prima disponibile
+            start_lang_value = start_lang_options[0]
+            start_index = 0
+            
     current_params['startLanguage'] = st.selectbox(
         "Lingua di Avvio (startLanguage)",
         options=start_lang_options,
@@ -233,7 +234,6 @@ with cols_p3[0]:
 
 with cols_p3[1]:
     # linguisticForm (Multi-Select)
-    LINGUISTIC_FORMS = ["formale", "informale", "neutrale", "tecnico", "burocratico", "persuasivo", "semplificato"]
     current_params['linguisticForm'] = st.multiselect(
         "Forma Linguistica (linguisticForm)",
         options=LINGUISTIC_FORMS,
@@ -244,8 +244,8 @@ with cols_p3[1]:
 
 current_params['verbosity'] = st.selectbox(
     "Livello di Verbosità (verbosity)",
-    options=["conciso", "dettagliato", "esaustivo ma conciso", "esaustivo", "contestuale"],
-    index=["conciso", "dettagliato", "esaustivo ma conciso", "esaustivo", "contestuale"].index(current_params.get('verbosity')),
+    options=VERBOSITY_LEVELS,
+    index=VERBOSITY_LEVELS.index(current_params.get('verbosity')),
     key="PARAM_VERBOSITY"
 )
 
@@ -282,8 +282,8 @@ with cols_tech[1]:
 with cols_tech[2]:
     current_params['llmModel'] = st.selectbox(
         "Modello LLM (llmModel)",
-        options=["gpt-4.1", "gemini-2.5-flash", "o4-mini", "gpt-oss-120b"],
-        index=["gpt-4.1", "gemini-2.5-flash", "o4-mini", "gpt-oss-120b"].index(current_params.get('llmModel')),
+        options=LLM_MODELS,
+        index=LLM_MODELS.index(current_params.get('llmModel')),
         key="PARAM_LLM"
     )
 st.markdown("---")
@@ -291,7 +291,7 @@ st.markdown("---")
 
 # --- 3. SEZIONE TOOLS ---
 st.header("3. 🛠️ Strumenti Abilitati (Tools)")
-current_tools = st.session_state.config['tools']
+current_tools = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
 
 st.caption("Abilita/disabilita le funzionalità del bot come da schema JSON.")
 cols_t1 = st.columns(3)
@@ -338,6 +338,12 @@ st.markdown("---")
 st.header("4. 💾 Riepilogo e Download")
 
 st.subheader("Anteprima Configurazione JSON")
+
+# Sostituiamo i dati nella sessione con i dati modificati
+st.session_state.config['business'] = current_business
+st.session_state.config['botParams'] = current_params
+st.session_state.config['tools'] = current_tools
+
 st.json(st.session_state.config)
 
 # Creo il file JSON per il download
@@ -348,7 +354,7 @@ col_save, col_download = st.columns(2)
 if col_save.button("💾 SALVA CONFIGURAZIONE SU SERVER", type="primary"):
     save_config(st.session_state.config)
 
-# Il nome del file ora include la Ragione Sociale (NOME SOCIETA)
+# Il nome del file include la Ragione Sociale (NOME SOCIETA)
 filename = f"{st.session_state.config['business']['ragioneSociale'].replace(' ', '_')}_config.json"
 
 col_download.download_button(
