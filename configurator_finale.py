@@ -38,10 +38,10 @@ LLM_MODELS = ["gpt-4.1", "gemini-2.5-flash", "o4-mini", "gpt-oss-120b"]
 # Struttura dei valori di default basata sullo schema JSON
 DEFAULT_CONFIG = {
     "botParams": {
-        "botName": "ROBBY",
-        "botGender": "male",
+        "botName": "",
+        "botGender": "",
         "botVoice": BOT_VOICES[0],
-        "serviceDescription": "Assistente virtuale per il supporto vendite.",
+        "serviceDescription": "",
         "serviceIntroduction": True,
         "availableLanguages": ["italian"], 
         "startLanguage": "italian", 
@@ -63,10 +63,10 @@ DEFAULT_CONFIG = {
         "allowedSendSMS": True 
     },
     "business": {
-        "ragioneSociale": "ROAR S.p.A.",
-        "partitaIva": "12345678901",
-        "sedeLegale": "Via Fittizia 1, 00100 Roma",
-        "sitoWeb": "https://www.roarinc.com"
+        "ragioneSociale": "",
+        "partitaIva": "",
+        "sedeLegale": "",
+        "sitoWeb": ""
     }
 }
 
