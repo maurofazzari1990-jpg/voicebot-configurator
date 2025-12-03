@@ -1,4 +1,3 @@
-# Ultimo tentativo.
 import streamlit as st
 import json
 import os
@@ -7,7 +6,7 @@ from collections import OrderedDict
 
 # --- DEFINIZIONE GLOBALE DELLO SCHEMA E OPZIONI ---
 
-CONFIG_FILE = "voicebot_config.json" # Mantenuto per la funzione load_config
+# CONFIG_FILE e la funzione load_config VENGONO NEUTRALIZZATI
 
 # --- OPZIONI DEFINITE DALLO SCHEMA JSON ---
 BOT_GENDERS = ["male", "female", "neutral"]
@@ -39,10 +38,10 @@ LLM_MODELS = ["gpt-4.1", "gemini-2.5-flash", "o4-mini", "gpt-oss-120b"]
 # Struttura dei valori di default basata sullo schema JSON
 DEFAULT_CONFIG = {
     "botParams": {
-        "botName": "",
-        "botGender": "",
+        "botName": "ROBBY",
+        "botGender": "male",
         "botVoice": BOT_VOICES[0],
-        "serviceDescription": "",
+        "serviceDescription": "Assistente virtuale per il supporto vendite.",
         "serviceIntroduction": True,
         "availableLanguages": ["italian"], 
         "startLanguage": "italian", 
@@ -64,33 +63,21 @@ DEFAULT_CONFIG = {
         "allowedSendSMS": True 
     },
     "business": {
-        "ragioneSociale": "",
-        "partitaIva": "",
-        "sedeLegale": "",
-        "sitoWeb": ""
+        "ragioneSociale": "ROAR S.p.A.",
+        "partitaIva": "12345678901",
+        "sedeLegale": "Via Fittizia 1, 00100 Roma",
+        "sitoWeb": "https://www.roarinc.com"
     }
 }
 
 # --- FUNZIONI UTILI ---
 
-def load_config():
-    """Carica la configurazione esistente o quella di default (con protezione da vecchia struttura)."""
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r') as f:
-                data = json.load(f)
-            
-            # --- CORREZIONE CRITICA PER KEY ERROR ---
-            if not all(key in data for key in ['botParams', 'business', 'tools']):
-                return DEFAULT_CONFIG
-            
-            return data
-        except json.JSONDecodeError:
-            st.warning("Errore di decodifica JSON. Carico i valori di default.")
-            return DEFAULT_CONFIG 
-    return DEFAULT_CONFIG
+# FUNZIONE load_config RIMOSSA! Ora usiamo direttamente il DEFAULT_CONFIG
 
-# La funzione save_config è stata rimossa perché non più utilizzata.
+def save_config(config_data):
+    """Questa funzione è ora solo un placeholder e non salva nulla."""
+    st.warning("⚠️ La funzionalità di salvataggio su server è disabilitata per prevenire errori di cache. Usa il pulsante SCARICA.")
+
 
 # Funzione per estrarre il codice voce dal nome completo
 def extract_voice_code(full_name):
@@ -100,10 +87,12 @@ def extract_voice_code(full_name):
 
 st.set_page_config(layout="wide", page_title="Configuratore JSON Schema Voicebot")
 
+# CORREZIONE FINALE: Inizializza con il DEFAULT_CONFIG se non esiste in sessione
 if 'config' not in st.session_state:
-    st.session_state.config = load_config()
+    st.session_state.config = DEFAULT_CONFIG # Forza il caricamento del default
 
 # --- CORREZIONE AGGIUNTIVA: Garantire l'esistenza delle chiavi principali nella sessione ---
+# Inizializza le chiavi mancanti con il default se la sessione è vuota.
 st.session_state.config['business'] = st.session_state.config.get('business', DEFAULT_CONFIG['business'])
 st.session_state.config['botParams'] = st.session_state.config.get('botParams', DEFAULT_CONFIG['botParams'])
 st.session_state.config['tools'] = st.session_state.config.get('tools', DEFAULT_CONFIG['tools'])
@@ -111,7 +100,6 @@ st.session_state.config['tools'] = st.session_state.config.get('tools', DEFAULT_
 
 # --- HEADER ---
 try:
-    # Ho corretto il nome del file immagine usando lo screenshot fornito: ROAR LOGO.png
     st.image("ROAR LOGO.png", width=200) 
 except:
     pass 
@@ -395,6 +383,7 @@ email_body = urllib.parse.quote(email_body_text)
 # --- ADATTAMENTO A DUE COLONNE ---
 col_download, col_email = st.columns(2)
 
+# Il nome del file include la Ragione Sociale (NOME SOCIETA)
 filename = f"{st.session_state.config['business']['ragioneSociale'].replace(' ', '_')}_config.json"
 
 col_download.download_button(
@@ -402,7 +391,7 @@ col_download.download_button(
     data=json_data,
     file_name=filename,
     mime="application/json",
-    type="primary" # Aggiungo primary al download
+    type="primary"
 )
 
 # Pulsante Email (usa st.markdown per il link mailto)
@@ -417,4 +406,4 @@ col_email.markdown(
     unsafe_allow_html=True
 )
 
-st.warning("⚠️ AVVISO: Usa i pulsanti sopra per scaricare il file JSON e inviarlo come riepilogo via email. Non è possibile allegare il file JSON direttamente via email.")
+st.warning("⚠️ AVVISO: L'app ora si carica sempre dai valori di default per prevenire errori di cache. Usa i pulsanti sopra per scaricare il file JSON o inviare un riepilogo via email. Non è possibile allegare il file JSON direttamente via email.")
