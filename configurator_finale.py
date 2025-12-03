@@ -1,4 +1,4 @@
-# Ultimo tentativo
+# Ultimo tentativo.
 import streamlit as st
 import json
 import os
